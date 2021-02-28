@@ -1,0 +1,91 @@
+﻿//课设报告txt版
+
+   
+   《面向对象程序设计课程设计》报告
+
+	图书管理系统的设计与实现
+	GUI库的设计与实现
+
+	班级：1619001
+	学号：161910130
+	姓名：钱品亦
+	邮箱：qianpinyi@outlook.com
+
+前言：
+　　在我高二的时候曾尝试使用Qt编写图形界面程序，但当时由于水平不高，对类的理解较浅，同时Qt的学习成本较高，因此未能学习下去。后来在高三的时候决定使用当时会使用的一个基础2D游戏库写一个自己绘制的GUI库。
+　　原版本的GUI库（PAL_GUI_Alpha）实现了多个基本控件，可以写一些简单的图形界面程序，但是由于一开始没有一个整体理解，并且存在不同时期的编程风格差异，因此这个版本的GUI库到了后面渐渐出现大的问题，在写到了近5k行以后，难以进一步拓展和维护，部分使用方法也很麻烦。因此，以此次C++面向对象程序设计课程设计为契机，以更为优雅的方式编写，重构原有的GUI库，即当前报告介绍的PAL_GUI。
+
+总览：
+	PAL_GUI库的绘图和事件部分使用的SDL2库提供的基本函数来实现。
+	SDL2库是一个底层2D游戏开发库，提供了对于窗口管理、渲染器创建、绘制基本图形（矩形、直线、点）等以2D图像绘制为主的简易函数的封装，以及事件处理和线程管理等额外2D游戏开发常用功能的封装。由于SDL2库是一个跨平台的库，因此，我写的PAL_GUI库也很容易跨平台（这么说是因为还没有进行跨平台开发，但是使用的平台特性很少，因此跨平台是很好实现的）。
+	PAL_GUI库主要完成的就是对于各个控件的事件处理和绘制工作，能绘制出与当前既有GUI库不同风格的界面，并且类中写了很多方便的用法，可以轻松使用。
+	由于代码很长很复杂，因此仅对其中各个类和核心内容进行简略介绍。
+
+总体框架：
+	核心类：
+		Posize：用左上角的坐标和宽高表示了一个矩形，是很核心的一个结构体/类，提供了大量成员函数对其操作。
+		Point: 即点的坐标，与Posize一起用来进行位置的控制和表示
+		RGBA: 即颜色，用四个分量表示某种颜色。
+		PosizeEX：即对Posize进行拓展的接口类，其派生类可以以各种不同的方案进行位置和大小关系的控制。
+		PUI_Window：窗口类，一个PUI_Window的对象表示一个窗口，因此此次的版本支持多窗口（原先写的版本不支持）。其成员控制绘制、事件等的核心功能。
+		Widgets：控件基类，也是一个很核心的类，所有的控件都由此控件派生。控制着控件ID、类型，大小位置、父子关系等信息。有CalcPsEx、ReceiveKeyboardInput、CheckEvent、CheckPos、Show的虚函数，以方便实现同一时间和绘制的管理。
+	
+	核心函数：
+		SolveEvent：即遍历整个控件树，处理事件消息。会将事件分类以不同的方式处理。
+		PresentWidgets：显示控件的函数，对当前标记需要更改的部分进行重绘制。
+		UpdateWidgetsPosize：更新控件的位置关系，一般在有控件的大小发生变化后使用。
+		
+
+派生控件类一览：
+	Layer：这是一个矩形的空间，一般用于控制父子空间的位置关系，方便布局，本身不处理事件，绘制仅为填充颜色（默认为空）。常用于实现其他的符合控件。
+	Button：即按钮，当按下的时候可以触发设置的回调函数。
+	LargeLayerWithScrollBar：带滚空条的表示一个更大的空间的控件。常用于对大量要显示的内容的局部显示。常被列表等控件复合。
+	TinyText：一个简易的标签控件，用于展示一串文本。不处理事件，仅绘制。有多种设置模式。
+	CheckBox：复选框，用于表示是否选中某项，状态切换时触发设置的回调函数。
+	SingleChoiceButton：单选框，对一列选项中同一时间只能选中一项，可设置回调函数。
+	Slider：滑块，一般用于拖动控制数值，回调函数接受double类型的变量，范围在[0,1]。
+	TwinLayerWithDivideLine：将一个控件一分为二（数值或水平），并且用户可以调整。
+	ShapedPictureButton：有形状的图片按钮，即异形按钮，和按钮类似，仅显示不同。
+	PictureBox：用于展示一副图片，可以设置多种模式和回调函数。
+	SimpleListView：列表控件，是一个模板类，用于以列表形式展现数据。
+	SimpleListView_MultiColor：继承于SimpleListView，可以对每一项单独设置颜色。
+	ProgressBar：进度条控件，需要主动来更新。
+	Menu1：右键菜单控件，填充MenuData结构体作为数据使用。
+	SwitchButton：即开关按钮，继承于CheckBox
+	TextEditLine：单行文本编辑控件，是相对比较复杂的控件了。
+	SimpleBlockView：块状列表，用于以块状形式显示控件，可以设置多项字符串和图片。
+	TextEditBox：多行文本编辑控件，所有控件中最复杂的...
+	TabLayer：标签页切换控件，用于设置多个标签也并切换。
+	AddressSeciton：抽象的路径控件，用于表示地址及快速切换。
+	FileAddressSeciton：文件路径控件，相当于是AddressSection的以文件路径为例的控件。	
+	TinyText2：继承于TinyText，每次显示前会触发回调函数，以确认是否更改展示的字符串。
+	SimpleTreeView1：树形列表控件，准备重写...
+	SimpleTreeView：等待重写的树形列表控件。
+	DetailedListView：详细列表控件，相对SimpleListView可以显示多个标签数据，同时支持排序。
+
+PosizeEX的派生类一览：
+	PosizeEX_Fa6：控制分割空间的三个区域中的两个，可以以像素或比例的形式指定，实际使用很多。
+	PosizeEX_MidFa：以父控件中心为基准，可控制偏移量的位置控制。
+	PosizeEX_MidFa_Single：类似于PosizeEX_MidFa，只不过只控制一个方向。
+	PosizeEX_LargeLayer：LargeLayerWithScrollBar的类中类，用于控制LargeArea的位置大小。
+	PosizeEX_TwinLayer：和上一条类似，用于控制TwinLayerWithDivideLine的两个Aera的位置和大小。
+	PosizeEX_TabLayer：也和上一条类似，用于控制TabLayer的多个Tab的位置和大小。
+	
+
+其他类：
+	PAL_Config：配置文件管理类，可以以类似map的形式使用。
+	TrieTree：对字典树以类的形式的封装
+	SplayTree：对伸展树以类的形式的封装
+	StringUTF8：处理变长字符集编码（指UTF8）的类。
+	StringUTF8_WithData：每个独立字符附带data的stringUTF8类
+	Debug_Out：调试输出类，可以同时输出到多个信道，方便程序结束后查看，也方便随时开关。重载了<<，可以像cout一样使用。
+	SharedTexturePtr：对SDL_Texture封装的智能指针，方便共享纹理以及内存控制。
+	PUI_ThemeColor：主题色管理类，更改后可以立即影响所有使用默认主题色的控件颜色。
+	PUI_Font_Struct：字体控制类，目前功能较简陋。
+	
+
+图书管理系统：
+	由于是图形界面操作，很直观，大体功能可以直接感受，主要还是用于展示GUI库的（虽然并没有完全展示所有功能）。
+
+其他：详细代码由于篇幅，附在报告中过于冗长，见附件。
+

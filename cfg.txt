@@ -1,0 +1,16 @@
+Sat_Aug_29_17:11:25_2020
+Version PAL_Config_Version_1.0
+ConfigName 图书管理系统配置文件1.0
+Locked 0
+
+BackgroundPicPath resources/bgpic2.png
+BgPicOpacity 175
+BookDataModifyRealtimeUpdate 0
+EnableAboutPageTEBscrollResize 0
+EnableAccelerate 1
+EnableBackgroundPic 0
+EnableCompleteCopy 0
+EnableDebugOut 1
+EnableShowTEBSpeacialChar 0
+
+Sat_Aug_29_17:11:25_2020
